@@ -24,6 +24,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const loginForm = document.getElementById("login-form");
   const closeLoginModal = document.querySelector(".close-login-modal");
   const loginMessage = document.getElementById("login-message");
+  const themeToggle = document.getElementById("theme-toggle");
+
+  function setTheme(isDarkMode) {
+    document.body.classList.toggle("dark-mode", isDarkMode);
+    themeToggle.setAttribute("aria-pressed", isDarkMode);
+    themeToggle.textContent = isDarkMode ? "Light mode" : "Dark mode";
+    localStorage.setItem("darkMode", isDarkMode);
+  }
+
+  setTheme(localStorage.getItem("darkMode") === "true");
 
   // Activity categories with corresponding colors
   const activityTypes = {
@@ -238,6 +248,9 @@ document.addEventListener("DOMContentLoaded", () => {
   loginButton.addEventListener("click", openLoginModal);
   logoutButton.addEventListener("click", logout);
   closeLoginModal.addEventListener("click", closeLoginModalHandler);
+  themeToggle.addEventListener("click", () => {
+    setTheme(!document.body.classList.contains("dark-mode"));
+  });
 
   // Close login modal when clicking outside
   window.addEventListener("click", (event) => {

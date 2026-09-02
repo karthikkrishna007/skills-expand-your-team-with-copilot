@@ -472,6 +472,107 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function openShareWindow(url) {
+    const shareWindow = window.open(url, "_blank", "noopener,noreferrer");
+    if (shareWindow) {
+      shareWindow.opener = null;
+    }
+  }
+
+  async function copyShareLink(url, button) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = url;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        const copied = document.execCommand("copy");
+        textArea.remove();
+
+        if (!copied) {
+          throw new Error("Copy command failed");
+        }
+      }
+
+      const originalText = button.textContent;
+      button.textContent = "Copied!";
+      setTimeout(() => {
+        button.textContent = originalText;
+      }, 2000);
+    } catch (error) {
+      console.error("Unable to copy activity link:", error);
+      showMessage("Unable to copy the link. Please try again.", "error");
+    }
+  }
+
+  function addShareButtons(activityCard, name, details, formattedSchedule) {
+    const pageUrl = new URL(window.location.href);
+    pageUrl.search = "";
+    pageUrl.hash = "";
+
+    const shareUrl = pageUrl.toString();
+    const shareText = `${name} at Mergington High School: ${details.description} Schedule: ${formattedSchedule}.`;
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedText = encodeURIComponent(shareText);
+
+    const shareActions = document.createElement("div");
+    shareActions.className = "share-actions";
+    shareActions.innerHTML = `
+      <span class="share-label">Share with friends</span>
+      <div class="share-buttons"></div>
+    `;
+
+    const shareButtons = shareActions.querySelector(".share-buttons");
+    const buttonDetails = [
+      {
+        label: "Facebook",
+        className: "facebook-share",
+        action: () =>
+          openShareWindow(
+            `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`
+          ),
+      },
+      {
+        label: "X",
+        className: "x-share",
+        action: () =>
+          openShareWindow(
+            `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`
+          ),
+      },
+      {
+        label: "Email",
+        className: "email-share",
+        action: () => {
+          window.location.href = `mailto:?subject=${encodeURIComponent(
+            `Join me for ${name}`
+          )}&body=${encodeURIComponent(`${shareText}\n\n${shareUrl}`)}`;
+        },
+      },
+      {
+        label: "Copy link",
+        className: "copy-share",
+        action: (button) => copyShareLink(shareUrl, button),
+      },
+    ];
+
+    buttonDetails.forEach(({ label, className, action }) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `share-button ${className}`;
+      button.textContent = label;
+      button.setAttribute("aria-label", `Share ${name} via ${label}`);
+      button.addEventListener("click", () => action(button));
+      shareButtons.appendChild(button);
+    });
+
+    activityCard.querySelector(".activity-card-actions").prepend(shareActions);
+  }
+
   // Function to render a single activity card
   function renderActivityCard(name, details) {
     const activityCard = document.createElement("div");
@@ -570,6 +671,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       </div>
     `;
+
+    addShareButtons(activityCard, name, details, formattedSchedule);
 
     // Add click handlers for delete buttons
     const deleteButtons = activityCard.querySelectorAll(".delete-participant");
